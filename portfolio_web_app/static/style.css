@@ -217,9 +217,9 @@ form button:hover {
     padding: 6px 12px;
     border-top: none;
     animation: fadeEffect 1s; /* Fading effect */
-    height: 400px; /* Or any fixed height */
+    height: 80vh; /* Set a responsive height */
     width: 100%;
-    position: relative; /* Add this for proper chart sizing */
+    position: relative;
 }
 
 .chart-tab-content.active {

@@ -85,7 +85,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#ffffff'
+                            color: '#ffffff',
+                            backdropColor: 'rgba(0, 0, 0, 1)' // Black backdrop
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
@@ -143,7 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#ffffff'
+                            color: '#ffffff',
+                            backdropColor: 'rgba(0, 0, 0, 1)' // Black backdrop
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
@@ -261,7 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#ffffff'
+                            color: '#ffffff',
+                            backdropColor: 'rgba(0, 0, 0, 1)' // Black backdrop
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
@@ -319,7 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#ffffff'
+                            color: '#ffffff',
+                            backdropColor: 'rgba(0, 0, 0, 1)' // Black backdrop
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
