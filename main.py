@@ -1,5 +1,8 @@
 import pandas as pd
 from datetime import datetime, timedelta
+import numpy as np
+from scipy import stats
+import os
 
 from data_handler import load_transactions, fetch_price_data
 from portfolio_processor import process_daily_transactions, calculate_daily_metrics, calculate_twr
@@ -24,6 +27,9 @@ def calculate_portfolio_performance(transactions_file, start_date, end_date):
 
     price_data = fetch_price_data(tickers, start_date, end_date)
 
+    # Ensure output directory exists
+    os.makedirs('output', exist_ok=True)
+
     portfolio_value = pd.DataFrame(index=price_data[spy_ticker].index)
     open_positions = {}
     closed_positions = []
@@ -40,9 +46,13 @@ def calculate_portfolio_performance(transactions_file, start_date, end_date):
     portfolio_value['SPY_TWR'] = 1.0
     portfolio_value['Net Invested Capital'] = 0.0
     portfolio_value['Cumulative Cash Flow Adjusted Return'] = 0.0
+    portfolio_value['Drawdown'] = 0.0
+    portfolio_value['Portfolio Daily Return'] = 0.0
+    portfolio_value['SPY Daily Return'] = 0.0
 
     total_cash_in_cumulative = 0.0
     total_cash_out_cumulative = 0.0
+    running_peak = 0.0
 
     for i, date in enumerate(portfolio_value.index):
         if i > 0:
@@ -50,16 +60,19 @@ def calculate_portfolio_performance(transactions_file, start_date, end_date):
             portfolio_value.loc[date, 'Closed P&L'] = portfolio_value.loc[prev_trading_day, 'Closed P&L']
             total_cash_in_cumulative = portfolio_value.loc[prev_trading_day, 'total_cash_in_cumulative']
             total_cash_out_cumulative = portfolio_value.loc[prev_trading_day, 'total_cash_out_cumulative']
+            running_peak = portfolio_value.loc[prev_trading_day, 'running_peak'] # Carry forward running_peak
         else:
             total_cash_in_cumulative = 0.0
             total_cash_out_cumulative = 0.0
+            running_peak = 0.0 # Initialize for the first day
 
         day_transactions = transactions[transactions['Date'] == date]
 
         open_positions, portfolio_value, closed_positions, total_cash_in_cumulative, total_cash_out_cumulative = \
             process_daily_transactions(date, day_transactions, open_positions, portfolio_value, closed_positions, total_cash_in_cumulative, total_cash_out_cumulative)
 
-        portfolio_value = calculate_daily_metrics(date, open_positions, price_data, portfolio_value, total_cash_in_cumulative, total_cash_out_cumulative, i)
+        portfolio_value, running_peak = calculate_daily_metrics(date, open_positions, price_data, portfolio_value, total_cash_in_cumulative, total_cash_out_cumulative, i, running_peak)
+        portfolio_value.loc[date, 'running_peak'] = running_peak # Store running_peak for next iteration
 
         portfolio_value = calculate_twr(i, date, portfolio_value, transactions, price_data, spy_ticker)
 
@@ -81,8 +94,58 @@ def calculate_portfolio_performance(transactions_file, start_date, end_date):
                 'P&L': pnl
             })
 
+    # --- Calculate Advanced Metrics ---
+    # Risk-free rate (annualized, then converted to daily)
+    RISK_FREE_RATE_ANNUAL = 0.02 # Example: 2% annual risk-free rate
+    TRADING_DAYS_IN_YEAR = 252
+    risk_free_rate_daily = RISK_FREE_RATE_ANNUAL / TRADING_DAYS_IN_YEAR
+
+    # Portfolio Daily Returns (excluding the first day which has no return)
+    portfolio_returns = portfolio_value['Portfolio Daily Return'][1:]
+    spy_returns = portfolio_value['SPY Daily Return'][1:]
+
+    # Sharpe Ratio
+    avg_portfolio_return = portfolio_returns.mean()
+    std_portfolio_return = portfolio_returns.std()
+    sharpe_ratio = (avg_portfolio_return - risk_free_rate_daily) / std_portfolio_return if std_portfolio_return != 0 else 0.0
+    sharpe_ratio_annualized = sharpe_ratio * np.sqrt(TRADING_DAYS_IN_YEAR)
+
+    # Sortino Ratio
+    downside_returns = portfolio_returns[portfolio_returns < risk_free_rate_daily]
+    downside_deviation = downside_returns.std() if not downside_returns.empty else 0.0
+    sortino_ratio = (avg_portfolio_return - risk_free_rate_daily) / downside_deviation if downside_deviation != 0 else 0.0
+    sortino_ratio_annualized = sortino_ratio * np.sqrt(TRADING_DAYS_IN_YEAR)
+
+    # Alpha and Beta (using linear regression)
+    # Ensure both series have data and align their indices
+    common_index = portfolio_returns.index.intersection(spy_returns.index)
+    if len(common_index) > 1:
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            spy_returns.loc[common_index],
+            portfolio_returns.loc[common_index]
+        )
+        beta = slope
+        alpha_daily = intercept
+        alpha_annualized = alpha_daily * TRADING_DAYS_IN_YEAR
+    else:
+        beta = 0.0
+        alpha_daily = 0.0
+        alpha_annualized = 0.0
+
+    # Store advanced metrics in a dictionary to pass around
+    advanced_metrics = {
+        "sharpe_ratio": round(sharpe_ratio_annualized, 2),
+        "sortino_ratio": round(sortino_ratio_annualized, 2),
+        "beta": round(beta, 2),
+        "alpha": round(alpha_annualized, 2)
+    }
+
     generate_csv_reports(portfolio_value, open_positions_data, closed_positions)
     generate_charts(portfolio_value, open_positions_data)
+    print("\n--- Portfolio Value DataFrame Columns before CSV generation ---")
+    print(portfolio_value.columns)
+
+    return advanced_metrics # Return advanced metrics
 
 if __name__ == '__main__':
     transactions_file = 'transactions.csv'
