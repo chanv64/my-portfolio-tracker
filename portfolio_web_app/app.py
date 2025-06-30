@@ -220,6 +220,17 @@ async def add_transaction(request: Request,
         end_date_for_calc = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
         advanced_metrics = calculate_portfolio_performance(transactions_file, '2025-03-26', end_date_for_calc)
 
+        # If running in AWS Lambda, upload the updated transactions.csv to S3
+        if 'AWS_LAMBDA_FUNCTION_NAME' in os.environ:
+            try:
+                s3 = boto3.client('s3')
+                s3_bucket_name = 'chanvawsbucket'
+                s3_key = 'data/transactions.csv'
+                s3.upload_file(transactions_file, s3_bucket_name, s3_key)
+                return {"message": "Transaction added, portfolio updated, and data synced with S3 successfully!", "advanced_metrics": advanced_metrics}
+            except Exception as e:
+                return {"message": f"Error uploading to S3: {e}"}
+
         return {"message": "Transaction added and portfolio updated successfully!", "advanced_metrics": advanced_metrics}
     except Exception as e:
         return {"message": f"Error adding transaction: {e}"}
