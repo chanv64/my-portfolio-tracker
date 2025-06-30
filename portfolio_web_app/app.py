@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 import pandas as pd
 import os
 from datetime import datetime, timedelta
+import boto3
 
 # Assuming main.py is in the parent directory and contains calculate_portfolio_performance
 import sys
@@ -13,15 +14,25 @@ from main import calculate_portfolio_performance
 
 app = FastAPI()
 
+# Define base directory for the app
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+# Define the project root directory (one level up from app.py)
+PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, '..'))
+
+# Define key file and directory paths
+STATIC_DIR = os.path.join(APP_DIR, 'static')
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'output')
+TRANSACTIONS_FILE = os.path.join(PROJECT_ROOT, 'transactions.csv')
+
 # Mount static files (CSS, JS, images)
-app.mount("/static", StaticFiles(directory="/Users/chanv/scripts/portfolio_tracker/portfolio_web_app/static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Templates for serving HTML (we'll use a simple HTML string for now, but Jinja2 is an option)
 # templates = Jinja2Templates(directory="portfolio_tracker/portfolio_web_app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    html_content = """
+    html_content = '''
     <!DOCTYPE html>
     <html>
     <head>
@@ -132,56 +143,56 @@ async def read_root():
         <script src="/static/script.js"></script>
     </body>
     </html>
-    """
+    '''
     return HTMLResponse(content=html_content)
 
 @app.get("/data/portfolio_value")
 async def get_portfolio_value_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     return df.to_dict(orient="records")
 
 @app.get("/data/open_positions")
 async def get_open_positions_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/open_positions.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "open_positions.csv"))
     return df.to_dict(orient="records")
 
 @app.get("/data/closed_positions")
 async def get_closed_positions_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/closed_positions.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "closed_positions.csv"))
     return df.to_dict(orient="records")
 
 @app.get("/data/chart/portfolio_value_over_time")
 async def get_portfolio_value_chart_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
     return {"dates": df["Date"].tolist(), "current_value": df["Current Value"].tolist(), "cost": df["Cost"].tolist()}
 
 @app.get("/data/chart/daily_pnl_change")
 async def get_daily_pnl_change_chart_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
     return {"dates": df["Date"].tolist(), "daily_pnl_change": df["Daily P&L Change"].tolist()}
 
 @app.get("/data/chart/asset_allocation")
 async def get_asset_allocation_chart_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/open_positions.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "open_positions.csv"))
     return {"labels": df["Symbol"].tolist(), "values": df["Value"].tolist()}
 
 @app.get("/data/chart/twr_vs_spy")
 async def get_twr_vs_spy_chart_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
     return {"dates": df["Date"].tolist(), "portfolio_twr": df["TWR"].tolist(), "spy_twr": df["SPY_TWR"].tolist()}
 
 @app.get("/data/chart/cumulative_cash_flow_adjusted_return")
 async def get_cumulative_return_chart_data():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
     return {"dates": df["Date"].tolist(), "cumulative_return": df["Cumulative Cash Flow Adjusted Return"].tolist()}
 
 @app.get("/data/metrics/maximum_drawdown")
 async def get_maximum_drawdown():
-    df = pd.read_csv("/Users/chanv/scripts/portfolio_tracker/output/portfolio_value.csv")
+    df = pd.read_csv(os.path.join(OUTPUT_DIR, "portfolio_value.csv"))
     # Maximum Drawdown is the largest value in the 'Drawdown' column
     mdd = df['Drawdown'].max()
     return {"maximum_drawdown": round(mdd * 100, 2)} # Return as percentage
@@ -207,7 +218,7 @@ async def add_transaction(request: Request,
         "Commission": commission
     }
 
-    transactions_file = "/Users/chanv/scripts/portfolio_tracker/transactions.csv"
+    transactions_file = TRANSACTIONS_FILE
     try:
         # Append to transactions.csv
         with open(transactions_file, 'a') as f:
@@ -238,7 +249,7 @@ async def add_transaction(request: Request,
 @app.get("/data/metrics/advanced")
 async def get_advanced_metrics():
     # Re-run calculation to get the latest metrics
-    transactions_file = "/Users/chanv/scripts/portfolio_tracker/transactions.csv"
+    transactions_file = TRANSACTIONS_FILE
     end_date_for_calc = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
     advanced_metrics = calculate_portfolio_performance(transactions_file, '2025-03-26', end_date_for_calc)
     return advanced_metrics
