@@ -4,10 +4,10 @@ import numpy as np
 from scipy import stats
 import os
 
-from data_handler import load_transactions, fetch_price_data
-from portfolio_processor import process_daily_transactions, calculate_daily_metrics, calculate_twr
-from report_generator import generate_csv_reports
-from chart_generator import generate_charts
+from src.data_handler import load_transactions, fetch_price_data
+from src.portfolio_processor import process_daily_transactions, calculate_daily_metrics, calculate_twr
+from src.report_generator import generate_csv_reports
+from src.chart_generator import generate_charts
 
 def calculate_portfolio_performance(transactions_file, start_date, end_date):
     """
@@ -148,7 +148,7 @@ def calculate_portfolio_performance(transactions_file, start_date, end_date):
     return advanced_metrics # Return advanced metrics
 
 if __name__ == '__main__':
-    transactions_file = 'transactions.csv'
+    transactions_file = 'data/transactions.csv'
     start_date = '2025-03-26'
     end_date = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
     calculate_portfolio_performance(transactions_file, start_date, end_date)

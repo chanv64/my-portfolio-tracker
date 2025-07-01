@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Description:
+# This script automates the daily update process for the portfolio tracker.
+# It navigates to the project directory, activates the Python virtual environment,
+# runs the `update_portfolio_data.py` script to fetch new data and recalculate
+# portfolio metrics, and logs the entire process.
+# This script is intended to be run as a scheduled task (e.g., via cron job).
+
+
 # Navigate to the project directory
 cd /Users/chanv/scripts/portfolio_tracker/
 
@@ -20,7 +28,7 @@ echo "
 source .venv/bin/activate
 
 # Run the Python script and redirect output to log file
-python update_portfolio_data.py >> "$LOG_FILE" 2>&1
+python scripts/update_portfolio_data.py >> "$LOG_FILE" 2>&1
 
 # Deactivate the virtual environment (optional, but good practice)
 deactivate

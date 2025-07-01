@@ -2,9 +2,9 @@ import os
 import sys
 
 # Add the project root to the sys.path to allow imports from main.py and update_portfolio_data.py
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from update_portfolio_data import update_portfolio_data
+from scripts.update_portfolio_data import update_portfolio_data
 
 def lambda_handler(event, context):
     """

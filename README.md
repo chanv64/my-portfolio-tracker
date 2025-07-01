@@ -9,6 +9,7 @@ This project provides a comprehensive portfolio tracking and analysis tool built
 - **Cash Flow Adjusted Return**: Computes a cumulative cash flow adjusted return (similar to Money-Weighted Return) to reflect performance based on actual capital invested.
 - **Open and Closed Positions Reports**: Generates detailed reports for open and closed positions, including cost basis and realized P&L.
 - **Historical Data Fetching**: Utilizes `yfinance` to fetch historical end-of-day stock prices.
+- **Advanced Performance Metrics**: Calculates key financial metrics such as Sharpe Ratio, Sortino Ratio, Alpha, and Beta.
 - **Visualizations**: Generates several charts to visualize portfolio performance:
     - Total Portfolio Value vs. Total Cost over time.
     - Daily P&L Change (bar chart).
@@ -19,14 +20,27 @@ This project provides a comprehensive portfolio tracking and analysis tool built
 ## Project Structure
 
 ```
+```
 portfolio_tracker/
 ├── main.py
-├── transactions.csv
 ├── requirements.txt
-├── data_handler.py
-├── portfolio_processor.py
-├── report_generator.py
-├── chart_generator.py
+├── data/
+│   └── transactions.csv
+├── src/
+│   ├── __init__.py
+│   ├── data_handler.py
+│   ├── portfolio_processor.py
+│   ├── report_generator.py
+│   └── chart_generator.py
+├── scripts/
+│   ├── run_portfolio_update.sh
+│   └── update_portfolio_data.py
+├── lambda/
+│   └── lambda_function.py
+├── portfolio_web_app/
+│   ├── app.py
+│   ├── portfolio_web_app_react/
+│   └── static/
 └── output/
     ├── portfolio_value.csv
     ├── open_positions.csv
@@ -37,6 +51,25 @@ portfolio_tracker/
     ├── twr_vs_spy.png
     └── cumulative_cash_flow_adjusted_return.png
 ```
+```
+
+## Web Application (portfolio_web_app)
+
+The `portfolio_web_app` is a FastAPI application that provides a web interface for the portfolio tracking and analysis tool. It offers the following functionalities:
+
+-   **Interactive Dashboard**: Serves a React-based frontend for an interactive user experience.
+-   **API Endpoints**: Exposes RESTful APIs to retrieve processed portfolio data (e.g., portfolio value, open/closed positions) and chart-specific data.
+-   **Transaction Management**: Allows users to add new transactions via a web form, triggering an immediate recalculation of portfolio performance.
+-   **Advanced Metrics Display**: Provides endpoints to fetch and display advanced portfolio metrics like Sharpe Ratio, Sortino Ratio, Alpha, and Beta.
+-   **AWS S3 Integration**: Supports uploading updated transaction data to an AWS S3 bucket when deployed in a Lambda environment.
+
+To run the web application:
+
+```bash
+uvicorn portfolio_web_app.app:app --reload
+```
+
+Then, open your browser and navigate to `http://127.0.0.1:8000`.
 
 ## Setup and Installation
 

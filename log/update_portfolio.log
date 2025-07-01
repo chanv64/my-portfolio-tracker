@@ -1,0 +1,18 @@
+
+--- Script started at 2025-07-01 08:01:47 ---
+/Users/chanv/scripts/portfolio_tracker/data_handler.py:12: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  price_data = yf.download(tickers, start=start_date, end=end_date)['Close']
+[                       0%                       ][*********             18%                       ]  2 of 11 completed[*************         27%                       ]  3 of 11 completed[*****************     36%                       ]  4 of 11 completed[**********************45%                       ]  5 of 11 completed[**********************55%*                      ]  6 of 11 completed[**********************64%******                 ]  7 of 11 completed[**********************73%**********             ]  8 of 11 completed[**********************82%**************         ]  9 of 11 completed[**********************91%*******************    ]  10 of 11 completed[*********************100%***********************]  11 of 11 completed
+Starting portfolio data update for period 2025-03-26 to 2025-07-02...
+
+--- Portfolio Value DataFrame Columns before CSV generation ---
+Index(['Current Value', 'Cost', 'Current P&L', 'Closed P&L', 'Overall P&L',
+       'P&L Positive', 'P&L Negative', 'Daily P&L Change', 'TWR', 'SPY_TWR',
+       'Net Invested Capital', 'Cumulative Cash Flow Adjusted Return',
+       'Drawdown', 'Portfolio Daily Return', 'SPY Daily Return',
+       'total_cash_in_cumulative', 'total_cash_out_cumulative',
+       'running_peak'],
+      dtype='object')
+Portfolio data updated successfully.
+Advanced Metrics: {'sharpe_ratio': np.float64(5.38), 'sortino_ratio': np.float64(67.61), 'beta': np.float64(-1.23), 'alpha': np.float64(24.66)}
+--- Script finished at 2025-07-01 08:01:50 ---

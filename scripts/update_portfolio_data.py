@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # Adjust path to import calculate_portfolio_performance from main.py
 # This assumes update_portfolio_data.py is in the same directory as main.py
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from main import calculate_portfolio_performance
 
 def update_portfolio_data():

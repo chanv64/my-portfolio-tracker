@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
@@ -22,7 +22,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, '..'))
 # Define key file and directory paths
 STATIC_DIR = os.path.join(APP_DIR, 'static')
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'output')
-TRANSACTIONS_FILE = os.path.join(PROJECT_ROOT, 'transactions.csv')
+TRANSACTIONS_FILE = os.path.join(PROJECT_ROOT, 'data', 'transactions.csv')
 
 # Mount static files (CSS, JS, images)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -30,121 +30,12 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Templates for serving HTML (we'll use a simple HTML string for now, but Jinja2 is an option)
 # templates = Jinja2Templates(directory="portfolio_tracker/portfolio_web_app/templates")
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root():
-    html_content = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Portfolio Tracker</title>
-        <link rel="stylesheet" href="/static/style.css">
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <!-- DataTables CSS -->
-        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
-    </head>
-    <body>
-        <div class="container">
-            <nav class="sidebar">
-                <h2>Menu</h2>
-                <ul>
-                    <li><a href="#" id="nav-welcome">Welcome</a></li>
-                    <li><a href="#" id="nav-charts">Charts</a></li>
-                    <li><a href="#" id="nav-portfolio-values">Portfolio Values</a></li>
-                    <li><a href="#" id="nav-open-positions">Open Positions</a></li>
-                    <li><a href="#" id="nav-closed-positions">Closed Positions</a></li>
-                    <li><a href="#" id="nav-add-transaction">Add Transaction</a></li>
-                </ul>
-            </nav>
-            <div class="content-area">
-                <h1>My Portfolio Dashboard</h1>
+# Mount the React app's static files
+app.mount("/app", StaticFiles(directory=os.path.join(APP_DIR, "portfolio_web_app_react/dist"), html=True), name="react_app")
 
-                <div id="welcome-section" class="content-section">
-                    <h2>Welcome to Your Portfolio Tracker!</h2>
-                    <p>Use the navigation on the left to explore your portfolio's performance, view detailed positions, or add new transactions.</p>
-                    <img src="/static/welcome.jpg" alt="Welcome Image" class="welcome-image">
-                </div>
-
-                <div id="charts-section" class="content-section hidden">
-                    <h2>Charts</h2>
-                    <div class="tabs">
-                        <button class="chart-tab-button active" data-tab-id="portfolio-value-chart-tab">Portfolio Value</button>
-                        <button class="chart-tab-button" data-tab-id="daily-pnl-chart-tab">Daily P&L</button>
-                        <button class="chart-tab-button" data-tab-id="asset-allocation-chart-tab">Asset Allocation</button>
-                        <button class="chart-tab-button" data-tab-id="twr-chart-tab">TWR vs SPY</button>
-                        <button class="chart-tab-button" data-tab-id="cumulative-return-chart-tab">Cumulative Return</button>
-                    </div>
-
-                    <div id="portfolio-value-chart-tab" class="chart-tab-content">
-                        <h3>Portfolio Value Over Time</h3>
-                        <canvas id="portfolio_value_chart"></canvas>
-                    </div>
-                    <div id="daily-pnl-chart-tab" class="chart-tab-content hidden">
-                        <h3>Daily P&L Change</h3>
-                        <canvas id="daily_pnl_chart"></canvas>
-                    </div>
-                    <div id="asset-allocation-chart-tab" class="chart-tab-content hidden">
-                        <h3>Asset Allocation</h3>
-                        <canvas id="asset_allocation_chart"></canvas>
-                    </div>
-                    <div id="twr-chart-tab" class="chart-tab-content hidden">
-                        <h3>Time-Weighted Return (TWR) vs. SPY</h3>
-                        <canvas id="twr_chart"></canvas>
-                    </div>
-                    <div id="cumulative-return-chart-tab" class="chart-tab-content hidden">
-                        <h3>Cumulative Cash Flow Adjusted Return</h3>
-                        <canvas id="cumulative_return_chart"></canvas>
-                    </div>
-                </div>
-
-                <div id="portfolio-values-section" class="content-section hidden">
-                    <h2>Portfolio Values</h2>
-                    <table id="portfolio_value_table"></table>
-                    <div id="metrics-display"></div>
-                </div>
-
-                <div id="open-positions-section" class="content-section hidden">
-                    <h2>Open Positions</h2>
-                    <table id="open_positions_table"></table>
-                </div>
-
-                <div id="closed-positions-section" class="content-section hidden">
-                    <h2>Closed Positions</h2>
-                    <table id="closed_positions_table"></table>
-                </div>
-
-                <div id="add-transaction-section" class="content-section hidden">
-                    <h2>Add New Transaction</h2>
-                    <form id="transaction_form">
-                        <label for="date">Date:</label>
-                        <input type="date" id="date" name="date" required><br><br>
-                        <label for="ticker">Ticker:</label>
-                        <input type="text" id="ticker" name="ticker" required><br><br>
-                        <label for="type">Type:</label>
-                        <select id="type" name="type" required>
-                            <option value="Buy">Buy</option>
-                            <option value="Sell">Sell</option>
-                        </select><br><br>
-                        <label for="quantity">Quantity:</label>
-                        <input type="number" id="quantity" name="quantity" required min="1"><br><br>
-                        <label for="price">Price:</label>
-                        <input type="number" step="0.01" id="price" name="price" required min="0.01"><br><br>
-                        <label for="commission">Commission:</label>
-                        <input type="number" step="0.01" id="commission" name="commission" required min="0"><br><br>
-                        <button type="submit">Add Transaction</button>
-                    </form>
-                    <p id="message"></p>
-                </div>
-            </div>
-        </div>
-        <!-- jQuery (required by DataTables) -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <!-- DataTables JS -->
-        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
-        <script src="/static/script.js"></script>
-    </body>
-    </html>
-    '''
-    return HTMLResponse(content=html_content)
+@app.get("/")
+async def read_root_redirect():
+    return RedirectResponse(url="/app/")
 
 @app.get("/data/portfolio_value")
 async def get_portfolio_value_data():
@@ -253,3 +144,8 @@ async def get_advanced_metrics():
     end_date_for_calc = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
     advanced_metrics = calculate_portfolio_performance(transactions_file, '2025-03-26', end_date_for_calc)
     return advanced_metrics
+
+# Catch-all route for React Router
+@app.get("/app/{full_path:path}", response_class=HTMLResponse)
+async def serve_react_app_paths(full_path: str):
+    return FileResponse(os.path.join(APP_DIR, "portfolio_web_app_react/dist/index.html"))
